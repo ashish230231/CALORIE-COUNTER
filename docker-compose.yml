@@ -1,0 +1,67 @@
+name: calorie-counter
+
+x-db-env: &db-env
+  POSTGRES_DB: ${POSTGRES_DB:-calorie}
+  POSTGRES_USER: ${POSTGRES_USER:-calorie}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-calorie}
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      <<: *db-env
+    volumes:
+      - pgdata:/var/lib/postgresql/data      # all your data lives here; survives restarts and upgrades
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    # Uncomment to reach Postgres from your laptop (e.g. with psql or DBeaver):
+    # ports:
+    #   - "127.0.0.1:5433:5432"
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-calorie}:${POSTGRES_PASSWORD:-calorie}@db:5432/${POSTGRES_DB:-calorie}
+      USDA_AUTO_IMPORT: ${USDA_AUTO_IMPORT:-true}
+      OPENFOODFACTS_ENABLED: ${OPENFOODFACTS_ENABLED:-true}
+    volumes:
+      - usda_cache:/data/usda                    # downloaded USDA zips (fetched once)
+      - ./data/usda:/data/usda-offline:ro        # optional: drop USDA zips here for offline installs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      <<: *db-env
+      PGHOST: db
+      PGPASSWORD: ${POSTGRES_PASSWORD:-calorie}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    volumes:
+      - ./scripts/backup.sh:/backup.sh:ro
+      - ./backups:/backups                       # compressed pg_dump files land on your laptop
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  usda_cache:
