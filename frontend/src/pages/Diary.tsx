@@ -10,10 +10,25 @@ import { NutrientGrid, NutrientTable } from '../components/Nutrients'
 import { MacroPreview, PortionPicker, usePortion } from '../components/Portion'
 import { MacroBar, Ring } from '../components/Ring'
 import { useToast } from '../components/Toast'
-import { MEAL_LABELS, amountLabel, kcal, kgToLb, lbToKg, num, prettyDate, shiftDate, today } from '../format'
+import {
+  MEAL_LABELS, amountLabel, clockTime, fullDate, kcal, kgToLb, lbToKg, num, prettyDate, shiftDate, shortDate, today,
+} from '../format'
 import { useProfile } from '../hooks'
 import type { Day, DiaryEntry, Meal } from '../types'
 import { MEALS } from '../types'
+
+function LiveClock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <span className="num" title={now.toLocaleString()}>
+      {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </span>
+  )
+}
 
 function DateNav({ date, setDate }: { date: string; setDate: (d: string) => void }) {
   return (
@@ -22,7 +37,7 @@ function DateNav({ date, setDate }: { date: string; setDate: (d: string) => void
         <Icon name="left" />
       </button>
       <label className="btn" style={{ position: 'relative', minWidth: 150 }}>
-        <Icon name="today" size={16} /> {prettyDate(date)}
+        <Icon name="today" size={16} /> {shortDate(date)}
         <input
           type="date"
           value={date}
@@ -159,7 +174,7 @@ function WeightCard({ day, imperial }: { day: Day; imperial: boolean }) {
         <input
           className="input num"
           inputMode="decimal"
-          placeholder={imperial ? 'lb' : 'kg'}
+          placeholder="0.0"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && parseFloat(value) > 0 && save.mutate()}
@@ -292,6 +307,7 @@ function MealCard({ meal, day, onAdd, onEdit }: { meal: Meal; day: Day; onAdd: (
             <div className="grow">
               <div className="title">{e.description}</div>
               <div className="sub">
+                <span title={new Date(e.created_at).toLocaleString()}>{clockTime(e.created_at)}</span> ·{' '}
                 {amountLabel(e.quantity, e.unit_label)}
                 {e.unit_label !== 'g' && e.unit_label !== 'kcal' ? ` · ${num(e.grams)} g` : ''}
                 {e.brand ? ` · ${e.brand}` : ''}
@@ -345,7 +361,15 @@ export function DiaryPage() {
   return (
     <>
       <div className="page-head">
-        <h1>{prettyDate(date)}</h1>
+        <div>
+          <h1>{prettyDate(date)}</h1>
+          <div className="muted row" style={{ gap: 8, marginTop: 4 }}>
+            <span>{fullDate(date)}</span>
+            <span className="faint">·</span>
+            <Icon name="clock" size={15} />
+            <LiveClock />
+          </div>
+        </div>
         <DateNav date={date} setDate={setDate} />
       </div>
       {profile.data && !profile.data.targets.profile_complete && (

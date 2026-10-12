@@ -75,5 +75,17 @@ export function prettyDate(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
+export function fullDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+export function shortDate(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+export function clockTime(d: Date | string): string {
+  return new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+}
+
 export const kgToLb = (kg: number) => kg / 0.45359237
 export const lbToKg = (lb: number) => lb * 0.45359237

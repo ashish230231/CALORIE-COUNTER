@@ -26,13 +26,15 @@ export function Ring({ value, target, size = 196, stroke = 16, children }: Props
           </linearGradient>
         </defs>
         <circle {...circle} style={{ stroke: 'var(--surface-3)' }} />
-        <circle
-          {...circle}
-          stroke="url(#ring-grad)"
-          strokeLinecap="round"
-          strokeDasharray={`${main * c} ${c}`}
-          style={{ transition: 'stroke-dasharray .6s cubic-bezier(.2,.8,.2,1)' }}
-        />
+        {main > 0 && (
+          <circle
+            {...circle}
+            stroke="url(#ring-grad)"
+            strokeLinecap="round"
+            strokeDasharray={`${main * c} ${c}`}
+            style={{ transition: 'stroke-dasharray .6s cubic-bezier(.2,.8,.2,1)' }}
+          />
+        )}
         {over > 0 && (
           <circle {...circle} strokeLinecap="round" strokeDasharray={`${over * c} ${c}`} style={{ stroke: 'var(--danger)' }} />
         )}
